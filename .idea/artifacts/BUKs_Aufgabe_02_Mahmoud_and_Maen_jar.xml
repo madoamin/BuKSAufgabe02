@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="BUKs Aufgabe 02 Mahmoud and Maen:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/BUKs_Aufgabe_02_Mahmoud_and_Maen_jar</output-path>
+    <root id="archive" name="BUKs Aufgabe 02 Mahmoud and Maen.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/resources/main/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="BUKs Aufgabe 02 Mahmoud and Maen" />
+    </root>
+  </artifact>
+</component>
