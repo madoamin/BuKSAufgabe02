@@ -5,7 +5,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.security.PublicKey;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -18,8 +17,8 @@ public class Client {
     private InetAddress adresse;
     private DatagramSocket socket;
     private int port;
-    public static Map<String, String> map;
-    private static DatagramPacket packet;
+    private Map<String, String> map;
+    private DatagramPacket packet;
 
     /**
      * Der Constructor dient zur Nutzereingabe des Standorts
@@ -30,53 +29,6 @@ public class Client {
         this.name = eingabe.nextLine();
         this.map = new HashMap<String,String>();
         eingabe.close();
-    }
-
-    /**
-     * Diese Methode aktualisiert die Daten der Station, wenn die Zeitstamp neu wird.
-     *
-     * @param name der Station
-     * @param data der Station
-     */
-    public void clientAktu(String name, String data) {
-        if (map.containsKey(name)) {
-            if (Long.parseLong(data.split("&")[2]) > Long.parseLong(map.get(name).split("&")[2])) ;
-            { //vergleicht die Zeitstamp
-                map.replace(name, data);
-            }
-        } else {
-            map.put(name, data);
-        }
-    }
-    /**
-     * Diese Methode erstellt zufaellige neue Daten..
-     *
-     * @return zufaellige Daten (Temeraturen, Luftfaechtigkeit und aktueller Zeitpunkt)
-     */
-    public String neueDataErstellen() {
-        int temperatur = (int) (Math.random() * (18 - 15 + 1) + 15); //Temperatur in Celsius zufaellig.
-        int luft = (int) (Math.random() * 100); // Luftfeuchtigkeit in % zufaellig.
-        long zeit = System.currentTimeMillis();
-        return temperatur + "&" + luft + "&" + zeit;
-    }
-
-
-    /**
-     * Methode um der Standort mit seine Informationen zu erstellen.
-     */
-    public void clientAufstellen() {
-        map.put(name, neueDataErstellen());
-    }
-    /**
-     * diese Methode teilt sowie das Paket in Stationen nach jeder"&" auf, als auch die Daten innerhalb der Station nach jeder "/"
-     */
-    private void dataSpeichern(String substring) {
-        String[] sData = substring.split("%");
-        for (String station : sData) {
-            String name = station.split("&")[0];
-            String data = station.split("&")[1] + "&" + station.split("&")[2] + "&" + station.split("&")[3];
-            clientAktu(name, data);
-        }
     }
 
     /**
@@ -105,12 +57,82 @@ public class Client {
         }
     }
 
+    /**
+     * Methode um der Standort mit seine Informationen zu erstellen.
+     */
+    public void clientAufstellen() {
+        map.put(name, neueDataErstellen());
+    }
+
+    /**
+     * Diese Methode erstellt zufaellige neue Daten..
+     *
+     * @return zufaellige Daten (Temeraturen, Luftfaechtigkeit und aktueller Zeitpunkt)
+     */
+    public String neueDataErstellen() {
+        int temperatur = (int) (Math.random() * (18 - 15 + 1) + 15);    // Temperatur in Celsius zufaellig.
+        int luft = (int) (Math.random() * 100);                         // Luftfeuchtigkeit in % zufaellig.
+        long zeit = System.currentTimeMillis();                         // die jetzige Zeit.
+        return temperatur + "&" + luft + "&" + zeit;
+    }
+
+    /**
+     * diese Methode teilt sowie das Paket in Stationen nach jeder"&" auf, als auch die Daten innerhalb
+     * der Station nach jeder "/"
+     */
+    private void dataSpeichern(String substring) {
+        String[] sData = substring.split("%");
+        for (String station : sData) {
+            String name = station.split("&")[0];
+            String data = station.split("&")[1] + "&" + station.split("&")[2] + "&" + station.split("&")[3];
+            clientAktu(name, data);
+        }
+    }
+
+    /**
+     * Diese Methode aktualisiert die Daten der Station, wenn die Zeitstamp neu wird.
+     *
+     * @param name der Station
+     * @param data der Station
+     */
+    public void clientAktu(String name, String data) {
+        if (map.containsKey(name)) {
+            if (Long.parseLong(data.split("&")[2]) > Long.parseLong(map.get(name).split("&")[2])){ //vergleicht die Zeitstamp
+                map.replace(name, data);
+            }
+        } else {
+            map.put(name, data);
+        }
+    }
+
+    /**
+     * Diese Methode gibt die Daten auf die Console aus.
+     */
+    private void aktuellAusgeben() {
+        System.out.println("--------------------------Port-------------------------------");
+        System.out.println("Die Station: " + name + " ist am Port " + this.port);
+        System.out.println("------------------- --Stationsdaten---------------------------");
+
+        HashMap<String,String> map = new HashMap<String, String>(this.map);
+        for (Map.Entry<String,String> e : map.entrySet()){
+            String name = e.getKey();
+            String data = e.getValue();
+            String[] vs = data.split("&");
+            System.out.println("Stationsname: " + name);
+            System.out.println("Temperatur: " + vs[0] + " C");
+            System.out.println("Luftfaeuchtigkeit: " + vs[1] + " %");
+            System.out.println("Zeitstamp: " + new Timestamp(Long.parseLong(vs[2])));
+            System.out.println("----------------------------------------------------------");
+        }
+    }
+
+    /**
+     * Mothode um das Client zu starten.
+     */
     public void clientStarten() {
         portSuchen();
         new Thread(this.austauchAusfuehren()).start();
         try {
-
-
         while (true) {
             for (int s : ports) {
                 if (s != this.port) {
@@ -144,44 +166,15 @@ public class Client {
         }
     }
 
+
     /**
-     * Diese Methode gibt die Daten auf die Console aus.
+     * Diese Methode ist fuer den Austauch der Packeten verantwortlich und ergibt eine Runnable damit mann mehrere
+     * Clients fuehren kann.
      */
-    private void aktuellAusgeben() {
-        System.out.println("--------------------------Port-------------------------------");
-        System.out.println("Die Station: " + name + " ist am Port " + this.port);
-        System.out.println("------------------- --Stationsdaten---------------------------");
-
-        HashMap<String,String> map = new HashMap<String, String>(this.map);
-        for (Map.Entry<String,String> e : map.entrySet()){
-            String name = e.getKey();
-            String data = e.getValue();
-            String[] vs = data.split("&");
-            System.out.println("Stationsname: " + name);
-            System.out.println("Temperatur: " + vs[0] + " C");
-            System.out.println("Luftfaeuchtigkeit: " + vs[1] + " %");
-            System.out.println("Zeitstamp: " + new Timestamp(Long.parseLong(vs[2])));
-            System.out.println("----------------------------------------------------------");
-        }
-    }
-
-    public static void main(String[] args) {
-        Client c = new Client();
-        c.clientStarten();
-    }
-
-
-
-    // New Austauch
-
-
     public Runnable austauchAusfuehren(){
         clientAufstellen();
         Runnable austauch = new Runnable() {
-
-
         private byte[] buffer;
-
 
         @Override
         public void run() {
@@ -189,15 +182,13 @@ public class Client {
                 while (true) {
                     buffer = new byte[1024];
                     packet = new DatagramPacket(buffer, buffer.length);
-
                     socket.receive(packet);
-                    String dataToString = new String(packet.getData(), packet.getOffset(), packet.getLength(), StandardCharsets.UTF_8); // um die Daten von Bytes into Strings umzuwandeln
+                    String dataToString = new String(packet.getData(), packet.getOffset(), packet.getLength(),
+                            StandardCharsets.UTF_8); // um die Daten von Bytes into Strings umzuwandeln
                     String controlle = dataToString.substring(0, 10);
-
                     if (dataToString.equals("--REQUEST--")) {
                         String antwort = "--STATUS--";
                         HashMap<String, String> mapcopy = new HashMap<String, String>(map);
-
                         for (HashMap.Entry<String, String> eingang : mapcopy.entrySet()) {
                             String name = eingang.getKey();
                             String data = eingang.getValue();
@@ -207,10 +198,8 @@ public class Client {
                         packet.setData(dataAntwort);
                         packet.setLength(dataAntwort.length);
                         socket.send(packet);
-
                     } else if (controlle.equals("--STATUS--")) {
                         dataSpeichern(dataToString.substring(10));
-
                     }
                 }
             } catch (IOException e) {
@@ -219,6 +208,16 @@ public class Client {
         }
     };
     return austauch;
+    }
+
+
+    /**
+     * main Methode um das client zu fuehren
+     * @param args
+     */
+    public static void main(String[] args) {
+        Client c = new Client();
+        c.clientStarten();
     }
 }
 
